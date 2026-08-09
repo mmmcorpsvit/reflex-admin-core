@@ -146,13 +146,14 @@ class UsersState(rx.State):
 def users_page() -> rx.Component:
     header = rx.box(rx.heading("Reflex Admin - Users"))
 
-    # Ensure initial load when the page is opened: call load if items are empty and not currently loading.
-    try:
-        if not UsersState.items and not UsersState.loading:
-            UsersState.load()
-    except Exception:
-        # If the Reflex action wiring differs, ignore here; the Reflex runtime will call actions appropriately.
-        pass
+    # Use the Reflex lifecycle hook to trigger initial load when the page mounts.
+    # Prefer common hooks in order: use_effect, use_effect_once, on_mount.
+    if hasattr(rx, "use_effect"):
+        rx.use_effect(UsersState.load)
+    elif hasattr(rx, "use_effect_once"):
+        rx.use_effect_once(UsersState.load)
+    elif hasattr(rx, "on_mount"):
+        rx.on_mount(UsersState.load)
 
     # For this task render a simple list of email addresses from UsersState.items
     rows = []
