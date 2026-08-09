@@ -25,6 +25,7 @@ from demo.db import get_session
 from demo.serializers import serialize_user
 from reflex_admin.admin import admin_site
 from reflex_admin.core.resource import Resource
+from demo.ui_helpers import format_range
 
 # Find the registered User resource
 UserResource: Resource | None = None
@@ -192,7 +193,19 @@ def users_page() -> rx.Component:
         # Use rx.foreach to render rows reactively from UsersState.items
         body = rx.foreach(UsersState.items, user_row)
 
-    return rx.vstack(header, rx.hstack(search_input, search_btn), header_row, body)
+    # Pagination controls: Previous | Page N | Next
+    prev_disabled = UsersState.page <= 1
+    next_disabled = (UsersState.page * UsersState.page_size) >= UsersState.total
+
+    prev_btn = rx.button("Previous", on_click=UsersState.prev_page, disabled=prev_disabled)
+    page_text = rx.text(f"Page {UsersState.page}")
+    next_btn = rx.button("Next", on_click=UsersState.next_page, disabled=next_disabled)
+
+    range_text = rx.text(format_range(UsersState.total, UsersState.page, UsersState.page_size))
+
+    pagination_row = rx.hstack(prev_btn, page_text, next_btn)
+
+    return rx.vstack(header, rx.hstack(search_input, search_btn), header_row, body, pagination_row, rx.box(range_text))
 
 
 # Create the Reflex App and register the page. Attempt common API patterns.
