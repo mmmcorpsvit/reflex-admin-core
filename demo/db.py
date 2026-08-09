@@ -14,5 +14,5 @@ def get_session():
     s = SessionLocal()
     try:
         yield s
-n    finally:
+    finally:
         s.close()
