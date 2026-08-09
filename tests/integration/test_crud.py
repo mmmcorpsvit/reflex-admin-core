@@ -2,6 +2,7 @@ from demo.models import User
 from reflex_admin.core.resource import Resource
 from reflex_admin.pydantic.schemas import UserCreate, UserUpdate
 
+
 def test_crud(session):
     # create
     resource = Resource(model=User, create_schema=UserCreate, update_schema=UserUpdate)

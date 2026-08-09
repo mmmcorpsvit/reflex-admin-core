@@ -5,6 +5,7 @@ from typing import Any, Optional
 class FieldDefinition:
     name: str
     python_type: Any
+    type: str = "unknown"
     nullable: bool = True
     primary_key: bool = False
     readonly: bool = False

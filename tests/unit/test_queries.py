@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from demo.models import Base
 from reflex_admin.core.filters import FilterExpression
 
+
 def setup_db():
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
