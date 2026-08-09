@@ -156,6 +156,10 @@ def users_page() -> rx.Component:
         rx.on_mount(UsersState.load)
 
     # For this task render a simple list of email addresses from UsersState.items
+    # Add a search input and Search button which trigger UsersState.load() via search_action
+    search_input = rx.input(value=UsersState.search, on_change=UsersState.set_state("search"), placeholder="Search users...")
+    search_btn = rx.button("Search", on_click=UsersState.search_action)
+
     rows = []
     if UsersState.items:
         for item in UsersState.items:
@@ -163,7 +167,7 @@ def users_page() -> rx.Component:
     else:
         rows.append(rx.text("No users found."))
 
-    return rx.vstack(header, *rows)
+    return rx.vstack(header, rx.hstack(search_input, search_btn), *rows)
 
 
 # Create the Reflex App and register the page. Attempt common API patterns.
