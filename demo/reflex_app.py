@@ -168,7 +168,7 @@ def users_page() -> rx.Component:
         rx.box(rx.strong("Created At")),
     )
 
-    # Table body (reactive iteration using rx.foreach when available)
+    # Table body (reactive iteration using rx.foreach)
     if UsersState.loading:
         body = rx.text("Loading...")
     elif UsersState.error:
@@ -176,38 +176,21 @@ def users_page() -> rx.Component:
     elif not UsersState.items:
         body = rx.text("No users found.")
     else:
-        # Use rx.foreach to make rows reactive to UsersState.items changes if available
-        if hasattr(rx, "foreach"):
-            def render_item(item):
-                email = item.get("email") or "-"
-                name = item.get("name") or "-"
-                active = "✓" if item.get("active") else ""
-                created = item.get("created_at") or "-"
-                return rx.hstack(
-                    rx.text(email),
-                    rx.text(name),
-                    rx.text(active),
-                    rx.text(created),
-                )
+        def user_row(item):
+            # Use item.get(...) fallback to avoid KeyError and support plain dicts/objects
+            email = item.get("email") if isinstance(item, dict) else getattr(item, "email", None)
+            name = item.get("name") if isinstance(item, dict) else getattr(item, "name", None)
+            active = item.get("active") if isinstance(item, dict) else getattr(item, "active", False)
+            created = item.get("created_at") if isinstance(item, dict) else getattr(item, "created_at", None)
+            return rx.hstack(
+                rx.text(email or "-"),
+                rx.text(name or "-"),
+                rx.text("✓" if active else ""),
+                rx.text(created or "-"),
+            )
 
-            body = rx.foreach(UsersState.items, render_item)
-        else:
-            # Fallback: build static rows (less reactive on older Reflex versions)
-            rows = []
-            for item in UsersState.items:
-                email = item.get("email") or "-"
-                name = item.get("name") or "-"
-                active = "✓" if item.get("active") else ""
-                created = item.get("created_at") or "-"
-                rows.append(
-                    rx.hstack(
-                        rx.text(email),
-                        rx.text(name),
-                        rx.text(active),
-                        rx.text(created),
-                    )
-                )
-            body = rx.vstack(*rows)
+        # Use rx.foreach to render rows reactively from UsersState.items
+        body = rx.foreach(UsersState.items, user_row)
 
     return rx.vstack(header, rx.hstack(search_input, search_btn), header_row, body)
 
