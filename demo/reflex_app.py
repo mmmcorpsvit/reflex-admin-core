@@ -188,11 +188,11 @@ def users_page() -> rx.Component:
 
     # Table body (reactive iteration using rx.foreach)
     if UsersState.loading:
-        body = rx.text("Loading...")
+        rows_component = rx.text("Loading...")
     elif UsersState.error:
-        body = rx.box(rx.text(UsersState.error), rx.button("Retry", on_click=UsersState.load))
+        rows_component = rx.box(rx.text(UsersState.error), rx.button("Retry", on_click=UsersState.load))
     elif not UsersState.items:
-        body = rx.text("No users found.")
+        rows_component = rx.text("No users found.")
     else:
         def user_row(item):
             # Use item.get(...) fallback to avoid KeyError and support plain dicts/objects
@@ -208,7 +208,7 @@ def users_page() -> rx.Component:
             )
 
         # Use rx.foreach to render rows reactively from UsersState.items
-        body = rx.foreach(UsersState.items, user_row)
+        rows_component = rx.foreach(UsersState.items, user_row)
 
     # Pagination controls: Previous | Page N | Next (reactive via @rx.var on UsersState)
     prev_btn = rx.button("Previous", on_click=UsersState.prev_page, disabled=UsersState.prev_disabled())
@@ -219,7 +219,31 @@ def users_page() -> rx.Component:
 
     range_text = rx.text(UsersState.range_label())
 
-    return rx.vstack(header, rx.hstack(search_input, search_btn), header_row, body, pagination_row, rx.box(range_text))
+    # Build a table (header + rows)
+    table = rx.vstack(header_row, rows_component)
+
+    # New body: hide pagination while loading
+    body = rx.vstack(
+        rx.cond(
+            UsersState.loading,
+            rx.text("Loading..."),
+            rx.vstack(
+                rx.cond(
+                    UsersState.error,
+                    rx.text(UsersState.error),
+                    rx.cond(
+                        UsersState.total == 0,
+                        rx.text("No users found."),
+                        table,
+                    ),
+                ),
+                pagination_row,
+                rx.box(UsersState.range_label()),
+            ),
+        ),
+    )
+
+    return rx.vstack(header, rx.hstack(search_input, search_btn), body)
 
 
 # Create the Reflex App and register the page. Attempt common API patterns.
