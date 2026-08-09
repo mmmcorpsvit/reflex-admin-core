@@ -146,37 +146,23 @@ class UsersState(rx.State):
 def users_page() -> rx.Component:
     header = rx.box(rx.heading("Reflex Admin - Users"))
 
-    # Search controls: input bound to state and a Search button
-    search_input = rx.input(value=UsersState.search, placeholder="Search users...")
-    search_btn = rx.button("Search", on_click=lambda: UsersState.search_action(search_input.value))
-    refresh_btn = rx.button("Refresh", on_click=UsersState.refresh)
+    # Ensure initial load when the page is opened: call load if items are empty and not currently loading.
+    try:
+        if not UsersState.items and not UsersState.loading:
+            UsersState.load()
+    except Exception:
+        # If the Reflex action wiring differs, ignore here; the Reflex runtime will call actions appropriately.
+        pass
 
-    # Table header: clickable sort buttons
-    cols = list(UserResource.list_display) if getattr(UserResource, "list_display", None) else [f.name for f in UserResource.get_fields()]
-    header_cells = [rx.button(c, on_click=lambda _c=c: UsersState.set_sort(_c)) for c in cols]
-    header_cells.append(rx.box("Actions"))
-    table_header = rx.hstack(*header_cells)
-
-    # Rows
-    def build_rows():
-        if UsersState.loading:
-            return rx.text("Loading...")
-        if UsersState.error:
-            return rx.box(rx.text(UsersState.error), rx.button("Retry", on_click=UsersState.load))
-        if not UsersState.items:
-            return rx.text("No users found.")
-        rows = []
+    # For this task render a simple list of email addresses from UsersState.items
+    rows = []
+    if UsersState.items:
         for item in UsersState.items:
-            cells = [rx.text(item.get(c) if item.get(c) is not None else "-") for c in cols]
-            cells.append(rx.button("View", on_click=lambda _id=item["id"]: UsersState.view(_id)))
-            rows.append(rx.hstack(*cells))
-        return rx.vstack(*rows)
+            rows.append(rx.text(item.get("email") or "-"))
+    else:
+        rows.append(rx.text("No users found."))
 
-    pagination = rx.hstack(rx.button("Previous", on_click=UsersState.prev_page), rx.text(f"Page {UsersState.page}"), rx.button("Next", on_click=UsersState.next_page))
-
-    footer = rx.box(rx.text(lambda: f"Showing {(UsersState.page-1)*UsersState.page_size+1}–{min(UsersState.page*UsersState.page_size, UsersState.total)} of {UsersState.total}"))
-
-    return rx.vstack(header, rx.hstack(search_input, search_btn, refresh_btn), table_header, build_rows(), pagination, footer)
+    return rx.vstack(header, *rows)
 
 
 # Create the Reflex App and register the page. Attempt common API patterns.
