@@ -168,7 +168,7 @@ def users_page() -> rx.Component:
         rx.box(rx.strong("Created At")),
     )
 
-    # Table body
+    # Table body (reactive iteration using rx.foreach when available)
     if UsersState.loading:
         body = rx.text("Loading...")
     elif UsersState.error:
@@ -176,21 +176,38 @@ def users_page() -> rx.Component:
     elif not UsersState.items:
         body = rx.text("No users found.")
     else:
-        rows = []
-        for item in UsersState.items:
-            email = item.get("email") or "-"
-            name = item.get("name") or "-"
-            active = "✓" if item.get("active") else ""
-            created = item.get("created_at") or "-"
-            rows.append(
-                rx.hstack(
+        # Use rx.foreach to make rows reactive to UsersState.items changes if available
+        if hasattr(rx, "foreach"):
+            def render_item(item):
+                email = item.get("email") or "-"
+                name = item.get("name") or "-"
+                active = "✓" if item.get("active") else ""
+                created = item.get("created_at") or "-"
+                return rx.hstack(
                     rx.text(email),
                     rx.text(name),
                     rx.text(active),
                     rx.text(created),
                 )
-            )
-        body = rx.vstack(*rows)
+
+            body = rx.foreach(UsersState.items, render_item)
+        else:
+            # Fallback: build static rows (less reactive on older Reflex versions)
+            rows = []
+            for item in UsersState.items:
+                email = item.get("email") or "-"
+                name = item.get("name") or "-"
+                active = "✓" if item.get("active") else ""
+                created = item.get("created_at") or "-"
+                rows.append(
+                    rx.hstack(
+                        rx.text(email),
+                        rx.text(name),
+                        rx.text(active),
+                        rx.text(created),
+                    )
+                )
+            body = rx.vstack(*rows)
 
     return rx.vstack(header, rx.hstack(search_input, search_btn), header_row, body)
 
