@@ -155,19 +155,44 @@ def users_page() -> rx.Component:
     elif hasattr(rx, "on_mount"):
         rx.on_mount(UsersState.load)
 
-    # For this task render a simple list of email addresses from UsersState.items
-    # Add a search input and Search button which trigger UsersState.load() via search_action
+    # For this task render a simple table of email, name, active, created_at from UsersState.items
+    # Keep search input and Search button as previously implemented
     search_input = rx.input(value=UsersState.search, on_change=UsersState.set_state("search"), placeholder="Search users...")
     search_btn = rx.button("Search", on_click=UsersState.search_action)
 
-    rows = []
-    if UsersState.items:
-        for item in UsersState.items:
-            rows.append(rx.text(item.get("email") or "-"))
-    else:
-        rows.append(rx.text("No users found."))
+    # Table header
+    header_row = rx.hstack(
+        rx.box(rx.strong("Email")),
+        rx.box(rx.strong("Name")),
+        rx.box(rx.strong("Active")),
+        rx.box(rx.strong("Created At")),
+    )
 
-    return rx.vstack(header, rx.hstack(search_input, search_btn), *rows)
+    # Table body
+    if UsersState.loading:
+        body = rx.text("Loading...")
+    elif UsersState.error:
+        body = rx.box(rx.text(UsersState.error), rx.button("Retry", on_click=UsersState.load))
+    elif not UsersState.items:
+        body = rx.text("No users found.")
+    else:
+        rows = []
+        for item in UsersState.items:
+            email = item.get("email") or "-"
+            name = item.get("name") or "-"
+            active = "✓" if item.get("active") else ""
+            created = item.get("created_at") or "-"
+            rows.append(
+                rx.hstack(
+                    rx.text(email),
+                    rx.text(name),
+                    rx.text(active),
+                    rx.text(created),
+                )
+            )
+        body = rx.vstack(*rows)
+
+    return rx.vstack(header, rx.hstack(search_input, search_btn), header_row, body)
 
 
 # Create the Reflex App and register the page. Attempt common API patterns.
