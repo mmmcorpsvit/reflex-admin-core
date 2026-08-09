@@ -82,6 +82,23 @@ class UsersState(rx.State):
             items = [serialize_user(i) for i in res["items"]]
             return {"items": items, "total": res["total"], "page": res["page"], "page_size": res["page_size"]}
 
+    # Derived reactive vars for pagination display
+    @rx.var
+    def page_label(self) -> str:
+        return f"Page {self.page}"
+
+    @rx.var
+    def prev_disabled(self) -> bool:
+        return self.page <= 1
+
+    @rx.var
+    def next_disabled(self) -> bool:
+        return (self.page * self.page_size) >= self.total
+
+    @rx.var
+    def range_label(self) -> str:
+        return format_range(self.total, self.page, self.page_size)
+
     # Actions
     def load(self):
         self.loading = True
@@ -193,17 +210,14 @@ def users_page() -> rx.Component:
         # Use rx.foreach to render rows reactively from UsersState.items
         body = rx.foreach(UsersState.items, user_row)
 
-    # Pagination controls: Previous | Page N | Next
-    prev_disabled = UsersState.page <= 1
-    next_disabled = (UsersState.page * UsersState.page_size) >= UsersState.total
-
-    prev_btn = rx.button("Previous", on_click=UsersState.prev_page, disabled=prev_disabled)
-    page_text = rx.text(f"Page {UsersState.page}")
-    next_btn = rx.button("Next", on_click=UsersState.next_page, disabled=next_disabled)
-
-    range_text = rx.text(format_range(UsersState.total, UsersState.page, UsersState.page_size))
+    # Pagination controls: Previous | Page N | Next (reactive via @rx.var on UsersState)
+    prev_btn = rx.button("Previous", on_click=UsersState.prev_page, disabled=UsersState.prev_disabled())
+    page_text = rx.text(UsersState.page_label())
+    next_btn = rx.button("Next", on_click=UsersState.next_page, disabled=UsersState.next_disabled())
 
     pagination_row = rx.hstack(prev_btn, page_text, next_btn)
+
+    range_text = rx.text(UsersState.range_label())
 
     return rx.vstack(header, rx.hstack(search_input, search_btn), header_row, body, pagination_row, rx.box(range_text))
 
