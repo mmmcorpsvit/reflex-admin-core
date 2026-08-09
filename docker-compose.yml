@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: reflex_admin
+      POSTGRES_PASSWORD: reflex_admin
+      POSTGRES_DB: reflex_admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
